@@ -7,7 +7,9 @@ edition = "2021"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-libp2p = { version = "0.43", features = ["tcp-tokio", "dns-tokio"] }
-ring = "0.16.20"
+secp256k1 = "0.22"
+rand = "0.8"
 log = "0.4"
 env_logger = "0.9"
+sha2 = "0.10"
+clap = { version = "4.1", features = ["derive"] }

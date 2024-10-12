@@ -1,38 +1,41 @@
 use serde::{Serialize, Deserialize};
-use ring::digest::{digest, SHA256};
+use sha2::{Sha256, Digest};
+use std::time::{SystemTime, UNIX_EPOCH};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Transaction {
-    sender: String,
-    receiver: String,
-    amount: u64,
+    pub from: String,
+    pub to: String,
+    pub amount: u64,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Block {
-    index: u64,
-    timestamp: u64,
-    previous_hash: String,
-    trasactions: Vec<Transaction>,
-    hash: String,
+    pub index: u64,
+    pub previous_hash: String,
+    pub timestamp: u64,
+    pub transactions: Vec<Transaction>,
+    pub nonce: u64,
 }
 
 impl Block {
-    pub fn new(index: u64, timestamp: u64, previous_hash: String, trasactions: Vec<Transaction>) -> Self {
-        let mut block = Block {
-            index,
-            timestamp,
-            previous_hash,
-            trasactions,
-            hash: String::new(),
-        }
-        block.hash = block.calculate_hash();
-        block
+    pub fn hash(&self) -> String {
+        let data = serde_json::to_string(self).unwrap();
+        let mut hasher = Sha256::new();
+        hasher.update(data);
+        format!("{:x}", hasher.finalize())
     }
 
-    pub fn calculate_hash(&self) -> String {
-        let block_data = serde_json::to_string(&self).unwrap();
-        let hash = digest(&SHA256, block_data.as_bytes());
-        hex::encode(hash)
+    pub fn new(index: u64, previous_hash: String, transactions: Vec<Transaction>, nonce: u64) -> Self {
+        Self {
+            index,
+            previous_hash,
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards")
+                .as_secs(),
+            transactions,
+            nonce,
+        }
     }
 }

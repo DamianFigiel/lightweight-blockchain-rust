@@ -1,43 +1,49 @@
 use crate::block::{Block, Transaction};
-use std::time::{SystemTime, UNIX_EPOCH};
+use rand::Rng;
 
 pub struct Blockchain {
-    chain: Vec<Block>,
+    pub blocks: Vec<Block>,
+    pub difficulty: usize,
 }
 
 impl Blockchain {
     pub fn new() -> Self {
-        Blockchain { chain: vec![Blockchain::create_genesis_block()] }
+        let mut blockchain = Self {
+            blocks: vec![],
+            difficulty: 4,
+        };
+        let genesis_block = Block::new(0, String::from("0"), vec![], 0);
+        blockchain.blocks.push(genesis_block);
+        blockchain
     }
 
-    fn create_genesis_block() -> Block {
-        Block::new(0, Blockchain::current_timestamp(), "0".into(), vec![])
-    }
+    pub fn add_block(&mut self, transactions: Vec<Transaction>) {
+        let previous_block = self.blocks.last().unwrap();
+        let mut rng = rand::thread_rng();
+        let mut nonce = rng.gen::<u64>();
 
-    fn current_timestamp() -> u64 {
-        SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()
-    }
+        loop {
+            let block = Block::new(
+                self.blocks.len() as u64,
+                previous_block.hash(),
+                transactions.clone(),
+                nonce,
+            );
 
-    pub fn add_block(&mut self, trasactions: Vec<Transaction>) {
-        let latest_block = self.chain.last().unwrap();
-        let new_block = Block::new(
-            latest_block.index + 1,
-            Blockchain::current_timestamp(),
-            latest_block.hash.clone(),
-            trasactions,
-        )
-        self.chain.push(new_block);
-    }
+            if &block.hash()[..self.difficulty] == "0000" {
+                self.blocks.push(block);
+                break;
+            }
 
-    pub fn validate_chain(&self) -> bool {
-        for i in 1..self.chain.len() {
-            let current = &self.chain[i];
-            let previous = &self.chain[i - 1];
-            if current.previous_hash != previous.hash || current.calculate_hash() != current.hash {
-                return false;
-            }     
+            nonce += 1;
         }
-        true
     }
 
+    pub fn validate_block(&self, block: &Block) -> bool {
+        &block.hash()[..self.difficulty] == "0000"
+    }
+
+    pub fn validate_transaction(&self, tx: &Transaction) -> bool {
+        tx.amount > 0
+    }
 }
